@@ -18,7 +18,7 @@ An anticheat is characterized by individuality, because otherwise the cheat deve
 3. [Type of cheats](#3-type-of-cheats)  
    3.1 [Injectors & Executors](#31-injectors--executors)  
    3.2 [Casual cheats](#32-casual-cheats)
-4. [Anticheat Implementations](#4-anticheat-implementations)   
+4. [Anticheat Implementations](#4-anticheat-implementations)  
    4.1 [Code security](#41-code-security)  
    4.2 [Data security](#42-data-security)  
    4.3 [Self banning events](#43-self-banning-events)  
@@ -33,12 +33,15 @@ An anticheat is characterized by individuality, because otherwise the cheat deve
    4.12 [Ammunition](#412-ammunition)  
    4.13 [Pressed keys](#413-pressed-keys)  
    4.14 [Explosives](#414-explosives)
+   4.15 [Teleporting](#415-teleporting)
+   4.16 [Noclip](#416-noclip)
 5. [Multiaccount detection](#5-multiaccount-detection)
 6. [Things you should consider](#6-things-you-should-consider)  
    6.1 [Spectator mode](#61-specator-mode)  
    6.2 [forced debug mode](#62-force-debug-mode)  
    6.3 [Bullet tracers](#63-bullet-tracers)  
-   6.4 [hiding while spectator mode](#64-hiding-while-spectator-mode)
+   6.4 [hiding while spectator mode](#64-hiding-while-spectator-mode)  
+   6.5 [Vehicle cheats](#65-vehicle-cheats)
 
 ## 1. Introduction
 
@@ -232,16 +235,22 @@ Also remember to make regular offshore backups of your database so that you don'
 
 We now know that the cheater can read the strings. But now you surely need strings to sync for example names, IDs, auth levels and so on with the players. To protect yourself from this you should use cryptic names for the synced metas or have them regenerated with every server restart. This way the cheater would have to search out the strings again with every server restart. The implementation of such a system should not bother you, because really few cheaters go so far and display the names in their ESP.
 
+#### Secure events
+
+Since events are sent to the server and also come from the server, they should be made unrecognizable to the cheater. You can change the event names when building the production version of the code, generate them automatically at server startup and send them encrypted to the client, and so on.
+
+The complexity of the implementation depends on the desired security level.
+
 #### Sanitizing & Storing passwords
 
 Never store user passwords in the database in plain text. Ideally, you should also never send user-entered passwords to the server in clear text. It is best to use a function that creates a hash from the user's password and use it for storage and authorization.
-You should also sanitize all values that the user can enter and save before saving them to the database. Most database modules have such a function integrated.
+Sanitize all values that the user can enter and save before saving them to the database. Most database modules have such a function integrated.
 If you like to write your own SQL commands, [mysql2](https://www.npmjs.com/package/mysql2) is the best choice.
 
 ### 4.3 Self banning events
 
 If you run client-side checks to see if the player is using cheats or not, then you should make sure in any case that you transfer the event to the server securely. We've learned that certain cheats can be used to block events, and that would undermine your entire anticheat.
-Also, don't use heartbeat checks, because the cheater can simply intercept and trigger implemented checks himself.
+Don't use heartbeat checks, because the cheater can simply intercept and trigger implemented checks himself.
 You should also avoid using websockets without any special security, because the player can easily trick them too.
 
 For me, the best solution was to send the ban reason as an event to the server and insert the current time. The server then checks if the incoming event is known or not and such an event can ban the cheater very easily and safely and the cheater can't prevent it.
@@ -403,7 +412,7 @@ alt.emitServer("refreshWeaponData", data);
 #### server:
 
 ```js
-alt.onClient('refreshWeaponData',refreshWeaponData);
+alt.onClient("refreshWeaponData", refreshWeaponData);
 function refreshWeaponData(player, data) {
   if (!player.valid) return;
   //if(player.data.authlevel < 1)return; MAKE SURE TO CHECK FOR PERMISSIONS!
@@ -623,6 +632,41 @@ Healing cheats are used less by players on alt:V, because they are warned in the
 
 An implementation of such checks is very simple and you can simply check in an interval x, or after each shot, whether the player has more HP than he should have.
 
+Here an implementation to check if someone has godmode active, or is healing himself automatically:
+Run the function if the player is suspicous, or in a random interval. It is up to you.
+
+```js
+let isChecking = false;
+let healhackviolation = 0;
+if (player.health > 110 /* Maybe exclude some edge cases like using medkits etc. in here*/) {
+    isChecking = true;
+    const oldHealth = player.health;
+    native.setEntityHealth(player, player.health - 1, 0); // take 1hp and check if the player regains it. If so, ban him :)
+    alt.setTimeout(() => {
+        alt.setTimeout(() => {
+            isChecking = false;
+        }, 500);
+        if (/* Maybe include some case to reset the counter */) {
+            healhackviolation = 0; //reset when left gamemode while test
+            return;
+        }
+        if (player.health >= oldHealth) {
+            healhackviolation++;
+        }
+        else {
+            healhackviolation = 0;
+            if (player.health < 200 && player.health > 100) { // not dead and not fullhp
+                native.setEntityHealth(player, player.health + 1, 0); //give back the 1 hp we stole the player
+            }
+        }
+        if (healhackviolation == 3) {
+            // Send Au Revoir
+            return;
+        }
+    }, 100);
+}
+```
+
 ### 4.12 Ammunition
 
 Just check after each shot if the player has more rounds in the magazine than he should have.
@@ -702,6 +746,7 @@ alt.setInterval(() => {
 ```
 
 ### 4.14 Explosives
+
 Rage cheaters like to use various functions to cause a lot of damage with explosions.
 
 Depending on the game mode, you can return explosions in the weaponDamage with false and thus block the whole thing, or you track how many explosions a player causes in a period of time.
@@ -709,62 +754,143 @@ Depending on the game mode, you can return explosions in the weaponDamage with f
 There are also cheats that teleport to the driver's seat of all vehicles in the area and then explode them.
 
 The most common explosion hash is the following:
+
 ```js
-weaponHash == 539292904
+weaponHash == 539292904;
+```
+
+### 4.15 Teleporting
+
+Teleport cheats are often used by Rage hackers or players in PvP modes, who port to another location shortly before death.
+
+When detecting, it is important to take into account that the player may have lags, fall under the map or simply have a really bad computer.
+
+Here is a small implementation approach:
+
+#### client
+
+```js
+const player = alt.Player.local;
+let latestPosition = player.pos;
+
+alt.everyTick(() => {
+  if (player.pos.distanceTo(latestPosition) > 100 /*&& player.health > 100*/) {
+    // somehow pause this detection when a player is about to teleport, because its requested by the gamemode or server.
+    // Also people with really bad fps may ban themselves. The best option is to track the performance and in PvP modes consider kicking players with really bad fps
+    if (player.getMeta("PREVENTTPDETECTION") || alt.getFps() < 20) {
+      latestPosition = player.pos;
+      return;
+    }
+    //handle teleport detection
+    alt.emitServer("CheatingIsBad", `Teleport/Speedhack ${latestPosition} -> ${player.pos} in one frame ${player.pos.distanceTo(latestPosition)}m traveled!`, 0);
+    latestPosition = player.pos;
+  } else {
+    latestPosition = player.pos;
+  }
+});
+```
+### 4.16 Noclip
+Noclip is also a function that is often only used by Rage cheaters and you can detect them relatively well. Here is an example:
+
+```js
+const player = alt.Player.local;
+let noclipviolation = 0
+
+// exlude vehicles with caution! Some cheats know that noclipping in vehicles is safe!
+if (!native.isPedRagdoll(player) && !player.vehicle && !native.isPedClimbing(player)) {
+            // we try to get the actual ground position of the player. Sometimes the function fails due to roof etc.
+            // may lead to issues in interiors or parking garages, make sure to test all possible locations and before only carefully execute automated bans
+            let [_, height] = native.getGroundZFor3dCoord(player.pos.x, player.pos.y, player.pos.z, undefined, undefined);
+            if (height == 0) [_, height] = native.getGroundZFor3dCoord(player.pos.x, player.pos.y, player.pos.z + 2, undefined, undefined);
+            if (height == 0) [_, height] = native.getGroundZFor3dCoord(player.pos.x, player.pos.y, player.pos.z + 50, undefined, undefined);
+            // If the game found no ground height the result is simply 0
+            if (height != 0) {
+                const heightdiff = player.pos.z - height;
+                if (heightdiff < -3 || heightdiff > 10) {
+                    // check if the player is swimming or at least over water and ignore it
+                    const [waterprobe, ___] = native.testVerticalProbeAgainstAllWater(player.pos.x, player.pos.y, player.pos.z, 0, 30);
+                    if(!waterprobe){ //if not over water and height difference above ground is too bad
+                        noclipviolation++;
+                    }
+                } else {
+                    noclipviolation = 0;
+                }
+                if (noclipviolation == 5) {
+                    // Send Noclip detection to server
+                    // Sending the detection after the first violation may lead to false positives, so we use 5 violations in a row
+                }
+            }
+        }
 ```
 
 ## 5. Multiaccount detection
+
 Depending on the effort, multiaccounts can be detected very quickly. If you run a RP server with forum, then you can filter out almost all players with a plugin for the Woltlab Suite, because they have to reset their browser agent and also other attributes are checked.
 
 But if you don't have a forum, it's a bit more complicated. In the first place, you can actually throw all of alt:V's or GTA's built-in checks in the garbage can. A cheater can spoof all these values with one click, or just fix the necessary adjustments.
 
 #### hwidHash & hwidExHash
-hwidHash and hwidExHash should also be viewed with absolute caution, as these values tend to change with a new installation of Windows, or a BIOS update. 
 
-ASRock motherboards with a certain type and an old BIOS version also have the bug that all players have the same hardware ID. 
+hwidHash and hwidExHash should also be viewed with absolute caution, as these values tend to change with a new installation of Windows, or a BIOS update.
+
+ASRock motherboards with a certain type and an old BIOS version also have the bug that all players have the same hardware ID.
 
 If you want to consider these values for identification, then you should form a hash from both and consider this combined. Individually, it can really lead to many difficulties.
+
 #### socialID
-It is recommended to block all players with the value set to 0, because they either use bad cheats, or try to connect in offline mode. 
+
+It is recommended to block all players with the value set to 0, because they either use bad cheats, or try to connect in offline mode.
 (Possibly allow temporarily after a GTA update, otherwise hardly anyone can join the server). You should also keep in mind, that every players SocialID can be 0 if Rockstars servers are offline or not working correctly.
 
 If the socialclub id is 488923086, then the player is using a version of a launcher that is very widespread in Eastern Europe, with which GTA can be played without a purchased license. I recommend to inform players with this ID to buy the game and also to kick/ban them from the server.
 
 #### discordID
-The discordID has one major purpose which makes it handy to use. It allows servers to dynamically create whitelists, which are connected to discord roles. The server can check if the user with discordId `123` has the role `abc`. Using only discordID allows cheaters to gain access using a spoofer to change their discordID to a whitelisted one so you should also consider using different methods at the same time.
+
+The discordID has one major purpose which makes it handy to use. It allows servers to dynamically create whitelists, which are connected to discord roles. The server can check if the user with discordId `123` has the role `abc`. Using only discordID allows cheaters to gain access using a spoofer to change their discordID to a whitelisted one so you should also consider using different methods at the same time. [We suggest using OAuth2](#so-if-all-is-bad-what-can-i-actually-use)
 
 #### ip
+
 By IP, I would only ban players if the account that matches that IP is also banned.
 Because at least in Germany many providers use Dual Stack Lite and it happens more often that players have the same public IP address. Also, IPs are reassigned after x hours and with a little luck you get that of another player.
 
 Furthermore, it can be that in a household several people play on the server and you would first have to whitelist all accounts in the household, so that they are no longer flagged.
 
 ### So if all is bad, what can I actually use?
+
 You should have the player log in with a Discord login and work with the player's token. No spoofer can influence these values and the player would have to create a new Discord account with every ban, which increases the hurdle significantly.
 
 You should also best check the IP, HardwareID etc on other accounts when the player logs in and if the other accounts are banned with matching data. If you ban the player at every overlap, then you first need a larger team, which takes care of the support tickets :D
 
-Use the [OAuth2 implementation from alt:V](https://docs.altv.mp/articles/discord_oauth.html) and please also add a [fallback for Linux users](https://github.com/Stuyk/altv-discord-auth)
+Use the [OAuth2 implementation from alt:V](https://docs.altv.mp/articles/discord_oauth.html) and please add a [fallback for Linux users](https://github.com/Stuyk/altv-discord-auth)
 
 ## 6. Things you should consider
+
 Always keep in mind that the race between cheaters and anticheat never ends and you as a server developer should regularly check your anticheat for updates and update it if necessary.
 Here are a few more ideas that come to my mind
 
 ### 6.1 Specator mode
+
 Develop a Spectator Mode that allows you to look from the cheater's point of view and closely observe his movements. You can use the native attachToEntity etc. for this.
 
 ### 6.2 Force debug mode
+
 The executor shown at the beginning of the guide allows cheaters with debug mode to connect to servers that do not allow it, and the player could get access to developer options, or hidden menus. Make sure that such accesses are secured on the server side, or are not even on the live server.
 Also, the player could produce sync errors and duplicate items or money. Pay attention to how fast the player reconnects after a disconnect.
 
 ### 6.3 Bullet tracers
+
 The new alt:V JS hook weaponShoot allows you to draw tracers of the bullets fired without silent or magic aimbot and you can better detect possible cheaters while spectating.
 
 ### 6.4 Hiding while spectator mode
+
 Never just set your player invisible while spectating, but move it to a negative dimension, or set the streamed parameter to false!
 Cheaters can see players who are invisible with their ESP and aimbots ignore any players who are invisible or in godmode.
 
+### 6.5 Vehicle cheats
+
+Vehicle cheats are unfortunately a little too short here in the guide, but you can certainly use vehicle handling similar to the weapon metas in the first place to see whether the player has modified them and also check whether, for example, the acceleration or maximum speed is too high.
+
 # Happy hunting! :heart:
+
 If you have any question feel free to write me on Discord Kaniggel#6969
 And if you like to contribute to this guide, feel free to help me adding more content!
-
