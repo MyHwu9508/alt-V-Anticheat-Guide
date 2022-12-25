@@ -1,4 +1,4 @@
-# alt-V-Anticheat-Guide
+<h1 align="center">alt-V-Anticheat-Guide</h1>
 
 ---
 
@@ -213,7 +213,7 @@ esbuild
   });
 ```
 
-#### How js bytecode code looks like:
+#### How JS bytecode looks like:
 
 <img src='https://i.imgur.com/iTM8MBX.png'>
 
@@ -252,7 +252,7 @@ Example:
 alt.emitServer(`No Bushes detected! ${Date.now()}`);
 ```
 
-### 4.4 No bushes/ props detection
+### 4.4 No bushes/props detection
 
 As we know, there are players who really try to get an advantage in any situation by any means. The player. The no bush or no prop modification described here ensures that the player does not see certain bushes, trees and objects. These often have no collision and the player can even shoot through them.
 
@@ -726,12 +726,12 @@ ASRock motherboards with a certain type and an old BIOS version also have the bu
 If you want to consider these values for identification, then you should form a hash from both and consider this combined. Individually, it can really lead to many difficulties.
 #### socialID
 It is recommended to block all players with the value set to 0, because they either use bad cheats, or try to connect in offline mode. 
-(Possibly allow temporarily after a GTA update, otherwise hardly anyone can join the server).
+(Possibly allow temporarily after a GTA update, otherwise hardly anyone can join the server). You should also keep in mind, that every players SocialID can be 0 if Rockstars servers are offline or not working correctly.
 
 If the socialclub id is 488923086, then the player is using a version of a launcher that is very widespread in Eastern Europe, with which GTA can be played without a purchased license. I recommend to inform players with this ID to buy the game and also to kick/ban them from the server.
 
 #### discordID
-Can also be spoofed very easily and has no useful purpose.
+The discordID has one major purpose which makes it handy to use. It allows servers to dynamically create whitelists, which are connected to discord roles. The server can check if the user with discordId `123` has the role `abc`. Using only discordID allows cheaters to gain access using a spoofer to change their discordID to a whitelisted one so you should also consider using different methods at the same time.
 
 #### ip
 By IP, I would only ban players if the account that matches that IP is also banned.
