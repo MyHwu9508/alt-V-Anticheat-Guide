@@ -638,7 +638,8 @@ Run the function if the player is suspicous, or in a random interval. It is up t
 ```js
 let isChecking = false;
 let healhackviolation = 0;
-if (player.health > 110 /* Maybe exclude some edge cases like using medkits etc. in here*/) {
+
+if (player.health > 110 && !isChecking  /* Maybe exclude some edge cases like using medkits etc. in here*/) {
     isChecking = true;
     const oldHealth = player.health;
     native.setEntityHealth(player, player.health - 1, 0); // take 1hp and check if the player regains it. If so, ban him :)
