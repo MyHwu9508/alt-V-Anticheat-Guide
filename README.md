@@ -165,8 +165,6 @@ In this part, things finally get interesting, because I'm going to present a few
 
 ### 4.1 Code security
 
-#### Introduction
-
 The security of your code should be your highest asset. If a cheater gets hold of some of your source code, he can really do a lot of damage. Also, it can happen that other server developers help themselves to your work and you end up being robbed of your work and time.
 
 alt:V offers with the bytecode module a very good protection against code theft. The only problem is that you can still read all strings with a code dumper and also which natives you use in which places. With a little effort, a cheater can then, for example, easily use your synced metas for usernames, IDs and auth levels and thus set his ESP really nice.
@@ -227,7 +225,7 @@ esbuild
 
 <img src='https://i.imgur.com/0rhYlfU.png'>
 
-#### 4.1.1 C# Code Protection
+#### 4.1.2 C# Code Protection
 It is always claimed that .NET applications are best for performance and code security.  
 Unfortunately, these fantastic features come at a price, at least on the client side.
 
