@@ -169,6 +169,7 @@ The security of your code should be your highest asset. If a cheater gets hold o
 
 alt:V offers with the bytecode module a very good protection against code theft. The only problem is that you can still read all strings with a code dumper and also which natives you use in which places. With a little effort, a cheater can then, for example, easily use your synced metas for usernames, IDs and auth levels and thus set his ESP really nice.
 
+#### 4.1.1 JavaScript Code Protection
 I currently only use the obfuscation method, since the alt:V bytecode module has caused massive crashes for all my players.
 
 So you might want to go one step further and use a bundler and obfuscation. I use for example the module [altv-esbuild](https://github.com/xxshady/altv-esbuild) from xxshady and the [JS obfuscator](https://obfuscator.io/) to protect my code. With this, strings are still readable, but they are split in places and you can make it much harder for the cheater.
@@ -224,6 +225,33 @@ esbuild
 
 <img src='https://i.imgur.com/0rhYlfU.png'>
 
+#### 4.1.2 C# Code Protection
+It is always claimed that .NET applications are best for performance and code security.  
+Unfortunately, these fantastic features come at a price, at least on the client side.
+
+As is well known, client-side C# runs inside a VM, which prevents unsafe calls on the user's computer.
+<pre>
+This is exactly the wonderful upside, yet the downside of implementing code protection.
+</pre>
+
+I don't like to say obvious things like <strong>Don't use debug in production</strong>, but this, along with code production, becomes very critical.
+
+Let's take .NET Reactor as an example, an industry-proven tool for protecting code.
+Other tools are most likely to have the same settings, but we cannot use most of thoes Settings, due to VM limitations.
+
+I have not looked into this extensively, however these are the only settings that work client side.  
+They either crashed due to unsafe memory calls or caused null references.
+<img src='https://i.imgur.com/5sKteAx.png'>
+
+But with all those given limitations, is it doing it's <strong>protection</strong> ?  
+See for yourself 🎇
+
+Without any Security Measures
+<img src='https://i.imgur.com/9I94dbe.png'>
+
+.NET Reactor (Limited) Security Measures  
+<strong>NOTE</strong> Strings are still human readable!
+<img src='https://i.imgur.com/Sb9oq3A.gif'>
 ### 4.2 Data security
 
 #### Secure your server
