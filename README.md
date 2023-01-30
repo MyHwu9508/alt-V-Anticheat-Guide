@@ -34,7 +34,8 @@ An anticheat is characterized by individuality, because otherwise the cheat deve
    4.13 [Pressed keys](#413-pressed-keys)  
    4.14 [Explosives](#414-explosives)  
    4.15 [Teleporting](#415-teleporting)  
-   4.16 [Noclip](#416-noclip)  
+   4.16 [Noclip](#416-noclip)
+   4.17 [Freecam](#417-freecam)
 5. [Multiaccount detection](#5-multiaccount-detection)
 6. [Things you should consider](#6-things-you-should-consider)  
    6.1 [Spectator mode](#61-specator-mode)  
@@ -850,6 +851,34 @@ if (!native.isPedRagdoll(player) && !player.vehicle && !native.isPedClimbing(pla
                 }
             }
         }
+```
+
+### 4.17 Freecam
+You can effortlessly identify the use of freecam by calculating the distance between the camera's position and the player's ped position. If the difference exceeds 10 (example), it can be concluded that the player is cheating with freecam.
+
+Please exercise caution when implementing automatic bans. It is advisable to exempt certain vehicles or adjust the permissible difference to a higher value.
+
+Example Clientside JS Implementation:
+
+(Disclaimer: The allowed differences are only examples, you need to figure out the correct maximum for yourself depending on your gamemode, …)
+
+```js
+const player = alt.Player.local;
+const ped = player.pos;
+const cam = alt.getCamPos();
+
+let allowed = 10;
+
+if (player.vehicle)
+   allowed = 100;
+
+if (player.IsInRagdoll)
+   allowed = 15;
+
+if (ped.sub(cam).length > allowed) {
+   alt.log("Freecam detected");
+   // be careful with self banning events
+}
 ```
 
 ## 5. Multiaccount detection
