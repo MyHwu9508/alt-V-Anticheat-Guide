@@ -34,7 +34,7 @@ An anticheat is characterized by individuality, because otherwise the cheat deve
    4.13 [Pressed keys](#413-pressed-keys)  
    4.14 [Explosives](#414-explosives)  
    4.15 [Teleporting](#415-teleporting)  
-   4.16 [Noclip](#416-noclip)
+   4.16 [Noclip](#416-noclip)  
    4.17 [Freecam](#417-freecam)
 5. [Multiaccount detection](#5-multiaccount-detection)
 6. [Things you should consider](#6-things-you-should-consider)  
