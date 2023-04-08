@@ -827,7 +827,7 @@ const player = alt.Player.local;
 let noclipviolation = 0
 
 // exlude vehicles with caution! Some cheats know that noclipping in vehicles is safe!
-if (!native.isPedRagdoll(player) && !player.vehicle && !native.isPedClimbing(player)) {
+if (!native.isPedRagdoll(player) && !player.vehicle && !native.isPedClimbing(player) && !native.isPedInParachuteFreeFall(alt.Player.local.scriptID)) {
             // we try to get the actual ground position of the player. Sometimes the function fails due to roof etc.
             // may lead to issues in interiors or parking garages, make sure to test all possible locations and before only carefully execute automated bans
             let [_, height] = native.getGroundZFor3dCoord(player.pos.x, player.pos.y, player.pos.z, undefined, undefined);
